@@ -8,7 +8,7 @@ import { WOOD, RUST, crate, barrel, buoy, createNet } from './props.js';
 // ---- 碼頭位置：從海灣的沙灘沿固定方向伸入淺海 ---------------------------------
 
 const ANGLE = 0.62;
-const DECK_Y = 0.42;
+export const DECK_Y = 0.42;
 
 function locate() {
   const dir = new THREE.Vector2(Math.cos(ANGLE), Math.sin(ANGLE));
@@ -42,7 +42,7 @@ const ground = (lx, lz) => {
 
 // ---- 棧橋 --------------------------------------------------------------------
 
-const END_WIDE = 1.3; // 末端加寬成小平台
+export const END_WIDE = 1.3; // 末端加寬成小平台
 
 function buildPier(ctx) {
   const b = ctx.lit;

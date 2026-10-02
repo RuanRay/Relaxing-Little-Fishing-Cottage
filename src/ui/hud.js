@@ -4,6 +4,7 @@
  */
 
 import { FISHING_STATE } from '../game/fishingSystem.js';
+import { fishIconSVG } from './fishIcon.js';
 
 export class HUD {
   /**
@@ -20,6 +21,7 @@ export class HUD {
     this.isCollectionOpen = false;
     this.isPaused = false;
     this.isFirstPersonActive = false; // 是否已從開場環繞切換至第一人稱
+    this.onCollectionToggle = null; // 圖鑑開關時通知遊戲主程式
 
     this.initDOM();
     this.bindEvents();
@@ -38,8 +40,8 @@ export class HUD {
     this.root.innerHTML = `
       <!-- 1. 開場標題與點擊開始 -->
       <div id="start-screen" class="interactive">
-        <div class="start-title">🎣 日式幻想海島</div>
-        <div class="start-sub">點擊畫面進入第一人稱</div>
+        <div class="start-title">🎣 日式幻想海島 · 釣魚日和</div>
+        <div class="start-sub">點擊開始</div>
       </div>
 
       <!-- 2. 準心 -->
@@ -49,6 +51,7 @@ export class HUD {
       <div id="charge-container">
         <div id="charge-fill"></div>
       </div>
+      <div id="zone-label"></div>
 
       <!-- 4. 咬鉤提示 -->
       <div id="bite-alert">！</div>
@@ -77,14 +80,14 @@ export class HUD {
 
       <!-- 7. 釣獲魚卡 -->
       <div id="fish-card" class="interactive">
-        <div class="fish-card-header">✦ 釣到新漁獲 ✦</div>
+        <div id="fish-card-header" class="fish-card-header">✦ 釣到了 ✦</div>
         <div class="fish-visual">
-          <div id="fish-card-shape" class="fish-avatar-shape"></div>
+          <div id="fish-card-shape" class="fish-icon"></div>
         </div>
         <div id="fish-card-name" class="fish-card-name">小丑魚</div>
         <div id="fish-card-badge" class="fish-card-badge rarity-普通">普通</div>
         <div id="fish-card-weight" class="fish-card-meta">重量：0.2 kg</div>
-        <div class="fish-card-hint">點擊任意處收起 (或 3 秒後自動收起)</div>
+        <div class="fish-card-hint">點擊收起（或 3 秒後自動收起）</div>
       </div>
 
       <!-- 8. 圖鑑視窗 (Tab 鍵) -->
@@ -95,7 +98,7 @@ export class HUD {
             <div id="collection-stats" class="collection-stats">收集進度：0 / 6</div>
           </div>
           <div id="collection-grid" class="collection-grid"></div>
-          <div class="collection-footer">按 [Tab] 或點擊背景關閉圖鑑</div>
+          <div class="collection-footer">按 [Tab] 或點擊關閉圖鑑</div>
         </div>
       </div>
 
@@ -103,7 +106,7 @@ export class HUD {
       <div id="pause-screen">
         <div class="pause-box interactive">
           <h2 style="margin:0 0 10px 0; color:var(--dark-green);">遊戲暫停</h2>
-          <p style="margin:0 0 16px 0; color:#555;">滑鼠已釋放</p>
+          <p style="margin:0 0 16px 0; color:#555;">滑鼠已釋放，點擊畫面繼續</p>
           <button id="resume-btn" style="
             background: var(--ocean-blue);
             color: #fff;
@@ -116,6 +119,10 @@ export class HUD {
           ">點擊恢復遊戲</button>
         </div>
       </div>
+
+      <!-- 10. 操作提示與除錯用的狀態顯示 -->
+      <div id="hint-bar"></div>
+      <div id="debug-state"></div>
     `;
 
     // 取得 DOM 引用
@@ -132,6 +139,10 @@ export class HUD {
       toastMessage: document.getElementById('toast-message'),
       fishCard: document.getElementById('fish-card'),
       fishCardShape: document.getElementById('fish-card-shape'),
+      fishCardHeader: document.getElementById('fish-card-header'),
+      zoneLabel: document.getElementById('zone-label'),
+      hintBar: document.getElementById('hint-bar'),
+      debugState: document.getElementById('debug-state'),
       fishCardName: document.getElementById('fish-card-name'),
       fishCardBadge: document.getElementById('fish-card-badge'),
       fishCardWeight: document.getElementById('fish-card-weight'),
@@ -172,14 +183,12 @@ export class HUD {
       this.hideFishCard();
     });
 
-    // 3. 鍵盤事件：Tab 切換圖鑑、Esc 暫停
+    // 3. 鍵盤事件：Tab 切換圖鑑。
+    //    Esc 會由瀏覽器直接解除滑鼠鎖定，暫停改由遊戲主程式依解鎖事件呼叫 togglePause()
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        this.toggleCollection();
-      } else if (e.key === 'Escape') {
-        this.togglePause();
-      }
+      if (e.key !== 'Tab') return;
+      e.preventDefault();
+      if (this.isFirstPersonActive && !this.isPaused && !e.repeat) this.toggleCollection();
     });
 
     // 點擊圖鑑遮罩可關閉
@@ -216,6 +225,7 @@ export class HUD {
       this.dom.chargeFill.style.width = '0%';
     } else {
       this.dom.chargeContainer.style.display = 'none';
+      this.dom.zoneLabel.classList.remove('show');
     }
 
     // 咬鉤提示「！」
@@ -270,8 +280,10 @@ export class HUD {
     this.dom.fishCardBadge.className = `fish-card-badge rarity-${fish.rarity}`;
     this.dom.fishCardWeight.textContent = `重量：${fish.weightKg.toFixed(1)} kg  (${fish.zone === 'shallow' ? '淺灘' : '深水'})`;
 
-    // 設置幾何形狀體色
-    this.dom.fishCardShape.style.backgroundColor = fish.colorHex;
+    // 以基本幾何圖形拼出的魚，顏色取體色
+    this.dom.fishCardShape.innerHTML = fishIconSVG(fish);
+    const record = this.collectionSystem ? this.collectionSystem.getRecord(fish.id) : null;
+    this.dom.fishCardHeader.textContent = record && record.count === 1 ? '✦ 新魚種！✦' : '✦ 釣到了 ✦';
 
     this.dom.fishCard.classList.add('show');
   }
@@ -288,6 +300,7 @@ export class HUD {
     } else {
       this.dom.collectionModal.classList.remove('show');
     }
+    if (this.onCollectionToggle) this.onCollectionToggle(this.isCollectionOpen);
   }
 
   renderCollectionGrid() {
@@ -302,7 +315,7 @@ export class HUD {
         if (entry.isUnlocked) {
           return `
             <div class="collection-card">
-              <div class="collection-card-icon" style="background:${entry.colorHex};"></div>
+              <div class="collection-card-icon fish-icon">${fishIconSVG(entry)}</div>
               <div class="collection-card-name">${entry.name}</div>
               <div class="collection-card-info">
                 ${entry.rarity} · ${entry.zone === 'shallow' ? '淺灘' : '深水'}<br>
@@ -314,7 +327,7 @@ export class HUD {
         } else {
           return `
             <div class="collection-card locked">
-              <div class="collection-card-icon" style="background:#4A4E51;"></div>
+              <div class="collection-card-icon fish-icon">${fishIconSVG(entry, { silhouette: true })}</div>
               <div class="collection-card-name">？？？</div>
               <div class="collection-card-info">
                 ${entry.rarity} · ${entry.zone === 'shallow' ? '淺灘' : '深水'}<br>
@@ -334,6 +347,26 @@ export class HUD {
     } else {
       this.dom.pauseScreen.classList.remove('show');
     }
+  }
+
+  /** 蓄力時顯示目前瞄準的水域 */
+  setZoneLabel(text, kind) {
+    this.dom.zoneLabel.textContent = text;
+    this.dom.zoneLabel.className = `show zone-${kind}`;
+  }
+
+  /** 畫面下方的操作提示，數秒後自動淡出 */
+  showHint(text, seconds = 6) {
+    this.dom.hintBar.textContent = text;
+    this.dom.hintBar.classList.add('show');
+    clearTimeout(this._hintTimeout);
+    this._hintTimeout = setTimeout(() => this.dom.hintBar.classList.remove('show'), seconds * 1000);
+  }
+
+  /** 除錯：在畫面角落印出狀態機目前的 state */
+  setDebugState(text) {
+    this.dom.debugState.style.display = 'block';
+    this.dom.debugState.textContent = text;
   }
 
   /**

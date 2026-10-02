@@ -149,6 +149,7 @@
         <button id="btn-cast" class="dock-btn">按住蓄力 / 放開拋竿 (左鍵)</button>
         <button id="btn-cancel" class="dock-btn" style="background:#f4ead4;">右鍵收竿</button>
         <button id="btn-tab-col" class="dock-btn" style="background:#e8f4f8;">查看圖鑑 (Tab)</button>
+        <button id="btn-sound" class="dock-btn" style="background:#fff3cd;">🔊 音效: 開啟</button>
       </div>
     </div>
 
@@ -183,12 +184,23 @@
       import { FISH_DATABASE, drawRandomFish, WATER_ZONES } from '/src/game/fishData.js';
       import { FishingSystem, FISHING_STATE } from '/src/game/fishingSystem.js';
       import { CollectionSystem } from '/src/game/collectionSystem.js';
+      import { GameAudio } from '/src/game/audio.js';
       import { HUD } from '/src/ui/hud.js';
 
       // 1. 初始化各子系統
       const collectionSystem = new CollectionSystem();
       const fishingSystem = new FishingSystem({ collectionSystem });
       const hud = new HUD({ fishingSystem, collectionSystem });
+      const audio = new GameAudio();
+
+      // 音效切換按鈕
+      const soundBtn = document.getElementById('btn-sound');
+      soundBtn.onclick = () => {
+        audio.start();
+        const muted = audio.toggleMute();
+        soundBtn.textContent = muted ? '🔇 音效: 靜音' : '🔊 音效: 開啟';
+        soundBtn.style.background = muted ? '#e0e0e0' : '#fff3cd';
+      };
 
       // 預設已啟動第一人稱 HUD
       hud.activateFirstPerson();
@@ -207,9 +219,9 @@
         zoneLandBtn.classList.toggle('active', mockIsLand);
       }
 
-      zoneShallowBtn.onclick = () => { currentMockZone = WATER_ZONES.SHALLOW; mockIsLand = false; updateZoneBtns(); };
-      zoneDeepBtn.onclick = () => { currentMockZone = WATER_ZONES.DEEP; mockIsLand = false; updateZoneBtns(); };
-      zoneLandBtn.onclick = () => { mockIsLand = true; updateZoneBtns(); };
+      zoneShallowBtn.onclick = () => { currentMockZone = WATER_ZONES.SHALLOW; mockIsLand = false; updateZoneBtns(); audio.ui(600); };
+      zoneDeepBtn.onclick = () => { currentMockZone = WATER_ZONES.DEEP; mockIsLand = false; updateZoneBtns(); audio.ui(700); };
+      zoneLandBtn.onclick = () => { mockIsLand = true; updateZoneBtns(); audio.ui(500); };
 
       // 2. 測試面板與狀態更新
       const stateBadge = document.getElementById('state-badge');
@@ -218,6 +230,19 @@
 
       fishingSystem.on('onStateChange', (newState) => {
         stateBadge.textContent = newState;
+        if (newState === FISHING_STATE.CASTING) {
+          audio.cast();
+        } else if (newState === FISHING_STATE.WAITING) {
+          audio.splash(0.5);
+        } else if (newState === FISHING_STATE.BITING) {
+          audio.bite();
+        } else if (newState === FISHING_STATE.CAUGHT) {
+          audio.caught();
+        } else if (newState === FISHING_STATE.ESCAPED) {
+          if (mockIsLand) audio.land();
+          else audio.escaped();
+        }
+
         if (newState === FISHING_STATE.WAITING || newState === FISHING_STATE.BITING || newState === FISHING_STATE.REELING || newState === FISHING_STATE.CAUGHT) {
           currentFishName.textContent = fishingSystem.currentFish
             ? `${fishingSystem.currentFish.name} (${fishingSystem.currentFish.weightKg}kg / 難度${fishingSystem.currentFish.difficulty})`
@@ -273,6 +298,14 @@
 
         fishingSystem.update(dt);
         hud.update(dt);
+
+        // 更新音效動態
+        if (fishingSystem.state === FISHING_STATE.REELING) {
+          audio.reel(dt, fishingSystem.isReelingInput, fishingSystem.tension);
+          if (fishingSystem.tension >= 88 || fishingSystem.tension <= 12) {
+            audio.warning(dt);
+          }
+        }
 
         // 更新計時器顯示
         if (fishingSystem.state === FISHING_STATE.WAITING) {

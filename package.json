@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "bundle": "node scripts/bundle-single-file.js",
     "deploy": "vite build && gh-pages -d dist --nojekyll"
   },
   "dependencies": {
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",
-    "vite": "^8.3.2"
+    "vite": "^8.3.2",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }

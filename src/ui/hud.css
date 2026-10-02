@@ -279,25 +279,16 @@
   justify-content: center;
 }
 
-.fish-avatar-shape {
-  width: 80px;
-  height: 48px;
-  border-radius: 50% 50% 40% 40%;
-  border: 3px solid var(--dark-green);
-  position: relative;
-  box-shadow: 0 4px 0 rgba(27,67,50,0.15);
+.fish-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.fish-avatar-shape::after {
-  content: '';
-  position: absolute;
-  right: -16px;
-  top: 10px;
-  width: 0;
-  height: 0;
-  border-top: 12px solid transparent;
-  border-bottom: 12px solid transparent;
-  border-left: 18px solid var(--dark-green);
+#fish-card-shape {
+  width: 140px;
+  height: 90px;
 }
 
 .fish-card-name {
@@ -403,16 +394,17 @@
 
 .collection-card.locked {
   background: #EAE6DB;
-  opacity: 0.65;
+}
+
+.collection-card.locked .collection-card-name,
+.collection-card.locked .collection-card-info {
+  opacity: 0.6;
 }
 
 .collection-card-icon {
-  width: 50px;
-  height: 30px;
-  margin: 6px auto;
-  border-radius: 50% 50% 40% 40%;
-  border: 2px solid var(--dark-green);
-  position: relative;
+  width: 84px;
+  height: 54px;
+  margin: 2px auto 4px;
 }
 
 .collection-card-name {
@@ -494,4 +486,57 @@
   padding: 30px 50px;
   text-align: center;
   box-shadow: 0 10px 0 var(--dark-green);
+}
+
+/* --- 9. 瞄準水域標籤、操作提示、除錯狀態 --- */
+#zone-label {
+  position: absolute;
+  top: calc(50% + 52px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 12px;
+  border: 2px solid var(--dark-green);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--ocean-blue);
+  display: none;
+}
+
+#zone-label.show { display: block; }
+#zone-label.zone-shallow { background: var(--ocean-blue); }
+#zone-label.zone-deep { background: #2A6FB8; }
+#zone-label.zone-land { background: var(--danger-red); }
+
+#hint-bar {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 249, 237, 0.92);
+  border: 2px solid var(--dark-green);
+  border-radius: var(--border-radius-md);
+  padding: 7px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dark-green);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#hint-bar.show { opacity: 1; }
+
+#debug-state {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(8, 28, 21, 0.75);
+  color: #fff;
+  font: 700 12px/1.5 ui-monospace, Consolas, monospace;
+  white-space: pre;
+  display: none;
 }

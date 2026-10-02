@@ -8,9 +8,13 @@ import { WOOD, WOOD_DARK, RUST, crate, barrel, lifebuoy, gardenLamp, createNet }
 const PLASTER = 0xf8f0dd;
 const TILE = [0x46526c, 0x3c475d];
 const ROOF_ANGLE = Math.atan2(0.9, 1.5);
-const BODY_Z = -0.35; // 屋身中心（前方留給木平台）
-const FRONT = BODY_Z + 1.0;
-const FLOOR = 0.3;
+export const BODY_Z = -0.35; // 屋身中心（前方留給木平台）
+export const FRONT = BODY_Z + 1.0;
+export const FLOOR = 0.3;
+// 平台通往沙灘的台階：中心線、長度與階數（可行走判定共用）
+export const STAIR_X = 0.95;
+export const STAIR_LENGTH = 1.5;
+const STAIR_STEPS = 5;
 
 export const HOUSE_MATRIX = T(HOUSE.x, HOUSE.y, HOUSE.z, 0, 0.42, 0);
 
@@ -205,12 +209,16 @@ function buildDeck(ctx, ground) {
     for (const z of [z0 + depth - 0.06, z0 + 0.6])
       beam(b, [x, ground(x, z) - 0.25, z], [x, FLOOR - 0.07, z], 0.05, 0.06, 0x6a4b35, under, 7);
 
-  // 通往沙灘的台階
-  for (let k = 0; k < 3; k++) {
-    const z = z0 + depth + 0.2 + k * 0.32;
-    const y = Math.max(ground(0.95, z) + 0.05, FLOOR - 0.15 * (k + 1));
-    b.add(box(0.9, 0.09, 0.3), 0xa9a8a6, T(0.95, y, z, 0, (r() - 0.5) * 0.1, 0));
+  // 通往沙灘的台階：從平台一路降到地面
+  const stairTop = z0 + depth;
+  const stairBottom = ground(STAIR_X, stairTop + STAIR_LENGTH);
+  for (let k = 0; k < STAIR_STEPS; k++) {
+    const z = stairTop + ((k + 0.5) / STAIR_STEPS) * STAIR_LENGTH;
+    const y = lerp(FLOOR, stairBottom, (k + 1) / (STAIR_STEPS + 1));
+    b.add(box(0.9, 0.08, 0.3), 0xa9a8a6, T(STAIR_X, y - 0.04, z, 0, (r() - 0.5) * 0.06, 0));
   }
+  for (const sx of [-0.42, 0.42])
+    beam(b, [STAIR_X + sx, FLOOR - 0.14, stairTop], [STAIR_X + sx, stairBottom - 0.12, stairTop + STAIR_LENGTH], 0.035, 0.035, 0x7d5a3c, under, 6);
 
   // 小桌椅與茶具
   const tx = -1.2;

@@ -63,6 +63,7 @@ export class FishingSystem {
     this.fishFightTimer = 0;
     this.overTensionTimer = 0;
     this.slackTensionTimer = 0;
+    this.stallTimer = 0; // 進度停在 0 的累計時間
 
     // 提示與回調
     this.toastMessage = '';
@@ -184,8 +185,8 @@ export class FishingSystem {
     if (!this.currentFish) return;
 
     const diff = this.currentFish.difficulty; // 1 ~ 5
-    // 難度越高，安全區越窄：難度 1 為 45%，難度 5 為 18%
-    const width = Math.max(16, 50 - diff * 7);
+    // 難度越高，安全區越窄：難度 1 為 46%，難度 5 為 22%
+    const width = Math.max(20, 52 - diff * 6);
     this.safeZoneMin = 50 - width / 2;
     this.safeZoneMax = 50 + width / 2;
     this.safeZoneCenter = 50;
@@ -195,6 +196,7 @@ export class FishingSystem {
     this.reelingProgress = 20; // 初始進度 20% 給予反應空間
     this.overTensionTimer = 0;
     this.slackTensionTimer = 0;
+    this.stallTimer = 0;
     this.fishFightTimer = 0;
     this.isReelingInput = true;
 
@@ -328,7 +330,7 @@ export class FishingSystem {
       this.slackTensionTimer = Math.max(0, this.slackTensionTimer - dt * 2);
     } else {
       // 偏離安全區：進度倒退
-      const lossRate = 12 + diff * 2.5;
+      const lossRate = 8 + diff * 2;
       this.reelingProgress -= lossRate * dt;
 
       // 檢查斷線（過載 > 92% 維持太久）
@@ -355,6 +357,19 @@ export class FishingSystem {
     }
 
     this.reelingProgress = Math.max(0, Math.min(100, this.reelingProgress));
+
+    // 進度歸零後僵持太久：魚掙脫
+    if (this.reelingProgress <= 0) {
+      this.stallTimer += dt;
+      if (this.stallTimer >= 2.0) {
+        this.showToast('魚掙脫了！魚跑掉了！');
+        this.setState(FISHING_STATE.ESCAPED);
+        this.emit('onEscape', 'stall');
+        return;
+      }
+    } else {
+      this.stallTimer = 0;
+    }
 
     this.emit('onTensionUpdate', {
       tension: this.tension,

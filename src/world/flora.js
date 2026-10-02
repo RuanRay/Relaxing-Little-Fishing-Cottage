@@ -237,6 +237,7 @@ export function createFlora(ctx) {
     const spot = shorePoint(deg + (r() - 0.5) * 8, 0.5);
     if (!spot || !isFree(spot.x, spot.z, 0.2)) continue;
     const palm = createPalm(ctx, spot, r);
+    ctx.colliders.push({ x: spot.x, z: spot.z, r: 0.16 });
     palms.push(palm);
     group.add(palm);
   }
@@ -250,12 +251,18 @@ export function createFlora(ctx) {
     if (trees.some((t) => Math.hypot(t.x - x, t.z - z) < 1.45)) continue;
     trees.push({ x, z });
     addRoundTree(b, x, z, r);
+    ctx.colliders.push({ x, z, r: 0.16 });
   }
 
   // 黑松：懸崖與燈塔一帶
-  addPine(b, LIGHTHOUSE.x + 1.3, LIGHTHOUSE.z - 0.5, r, -2.3);
-  addPine(b, LIGHTHOUSE.x - 0.3, LIGHTHOUSE.z + 1.5, r, 2.7);
-  addPine(b, HOUSE.x - 2.9, HOUSE.z + 0.9, r, 2.2);
+  for (const [px, pz, lean] of [
+    [LIGHTHOUSE.x + 1.3, LIGHTHOUSE.z - 0.5, -2.3],
+    [LIGHTHOUSE.x - 0.3, LIGHTHOUSE.z + 1.5, 2.7],
+    [HOUSE.x - 2.9, HOUSE.z + 0.9, 2.2],
+  ]) {
+    addPine(b, px, pz, r, lean);
+    ctx.colliders.push({ x: px, z: pz, r: 0.16 });
+  }
 
   // 灌木與花叢
   for (let i = 0, placed = 0; i < 600 && placed < 42; i++) {
@@ -343,6 +350,7 @@ export function createFlora(ctx) {
   addTorii(b);
   addPath(b, r);
   addStoneLantern(ctx, group, LANTERN.x, LANTERN.z);
+  ctx.colliders.push({ x: LANTERN.x, z: LANTERN.z, r: 0.22 });
 
   ctx.updates.push((t) => {
     for (const p of palms) {

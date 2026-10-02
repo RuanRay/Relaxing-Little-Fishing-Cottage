@@ -101,4 +101,10 @@
     * `src/ui/hud.js` & `src/ui/hud.css`：準心、蓄力條、咬鉤警示「！」、右側張力條與進度條、魚卡彈窗、Tab 圖鑑面板、Esc 暫停。
     * `test_fishing.html`：免 3D 前提之獨立互動測試台，即開即玩即驗證。
     * 規格文件已封存至 `docs/FISHING_GAME_SPEC.md`。
-  * **下一步整合（等待 Opus 5.5 3D 完成）**：將 3D 場景點擊拋竿射線與浮標落點判定串接至 `FishingSystem.handlePointerUp({ zone, isLand })`，並將 HUD 疊加在 3D Canvas 上。
+  * **3D 整合完成（Opus 5.5）**：釣魚核心模組已接上海島場景，`index.html` 即為完整遊戲。
+    * 新增 `src/game/`：`cameraDirector.js`（開場環繞與 1.5 秒過場）、`player.js` + `walkable.js`（第一人稱移動、可行走區域、落點水域判定）、`rod.js`（釣竿姿態）、`bobber.js`（浮標、釣線、水花、落點標記）、`audio.js`（Web Audio 合成音效）、`game.js`（輸入與各模組串接）。
+    * 新增 `src/ui/fishIcon.js`：以基本幾何圖形拼出的魚圖示與圖鑑剪影。
+    * `fishingSystem.js` 調整：安全區寬度與進度倒退速度放寬（難度 5 原本一般玩家無法釣起），並新增「進度歸零僵持 2 秒則魚掙脫」。
+    * `hud.js` 調整：Esc 暫停改由 Pointer Lock 解鎖事件驅動；Tab 僅在第一人稱中有效。
+    * 建置改為單一 HTML 檔（`vite-plugin-singlefile`）。
+  * **（已完成）下一步整合（等待 Opus 5.5 3D 完成）**：將 3D 場景點擊拋竿射線與浮標落點判定串接至 `FishingSystem.handlePointerUp({ zone, isLand })`，並將 HUD 疊加在 3D Canvas 上。

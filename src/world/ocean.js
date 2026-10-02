@@ -4,6 +4,13 @@ import { HALF, heightAt } from './terrain.js';
 
 const WATER_SEG = 128;
 
+/** 水面高度（與下方頂點著色器的波形一致），供浮標等物件貼著水面起伏 */
+export function waveHeight(x, z, t) {
+  const edge = Math.min(1, Math.max(0, (HALF - Math.max(Math.abs(x), Math.abs(z))) / 1.5));
+  const inner = edge * edge * (3 - 2 * edge);
+  return inner * 0.035 * (Math.sin(x * 1.7 + t * 1.3) + Math.sin(z * 2.1 - t * 1.1));
+}
+
 const NOISE_GLSL = /* glsl */ `
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float vnoise(vec2 p) {
