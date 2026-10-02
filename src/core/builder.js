@@ -128,6 +128,29 @@ export function tube(points, radius = 0.02, segments = 16, radial = 5) {
   return new THREE.TubeGeometry(curve, segments, radius, radial, false);
 }
 
+/** 朝 -y 垂落的波浪狀葉帶（海藻、布條） */
+export function ribbon(length, width, phase = 0, wave = 0.06) {
+  const segs = 6;
+  const pos = [];
+  const idx = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const w = width * (1 - t * 0.75);
+    const x = Math.sin(t * 5 + phase) * wave * t;
+    const z = 0.02 + Math.sin(t * 3 + phase) * wave * 0.5;
+    pos.push(x - w, -t * length, z, x + w, -t * length, z);
+    if (i < segs) {
+      const a = i * 2;
+      idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
 /** 兩點之間的圓柱（柱、桿、樑） */
 export function beam(b, a, c, rTop, rBottom, color, id, seg = 8) {
   const va = new THREE.Vector3(a[0], a[1], a[2]);
