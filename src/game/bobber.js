@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { Builder, T, ball, cyl, cone, newId } from '../core/builder.js';
-import { toonMat, gradientMap } from '../core/materials.js';
+import { Builder, T, ball, cyl, newId } from '../core/builder.js';
+import { toonMat } from '../core/materials.js';
 import { waveHeight } from '../world/ocean.js';
+import { createFishModel } from '../world/fishModels.js';
 import { HALF } from '../world/terrain.js';
 import { FISHING_STATE } from './fishingSystem.js';
 import { WATER_ZONES } from './fishData.js';
@@ -76,26 +77,10 @@ export class Bobber {
       this.drops.push({ mesh, velocity: new THREE.Vector3(), life: 0 });
     }
 
-    // 釣起的魚：以基本幾何體拼成，顏色取魚種的體色
-    this.fishMaterial = new THREE.MeshToonMaterial({ gradientMap, color: 0xffffff });
-    this.fishAccent = new THREE.MeshToonMaterial({ gradientMap, color: 0xffffff });
-    this.fishMesh = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), this.fishMaterial);
-    body.scale.set(0.24, 0.1, 0.06);
-    const tail = new THREE.Mesh(cone(0.09, 0.16, 4), this.fishAccent);
-    tail.rotation.z = -Math.PI / 2;
-    tail.scale.z = 0.15;
-    tail.position.x = -0.28;
-    const fin = new THREE.Mesh(cone(0.05, 0.1, 4), this.fishAccent);
-    fin.scale.z = 0.15;
-    fin.position.set(0, 0.11, 0);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 5), new THREE.MeshBasicMaterial({ color: 0x1b2430 }));
-    eye.position.set(0.15, 0.025, 0.05);
-    const eye2 = eye.clone();
-    eye2.position.z = -0.05;
-    this.fishMesh.add(body, tail, fin, eye, eye2);
-    this.fishMesh.visible = false;
-    this.group.add(this.fishMesh);
+    // 釣起的魚：每個魚種有自己的模型，第一次釣到時才建立
+    this.fishModels = new Map();
+    this.fishMesh = null;
+    this.fishLength = 0.3;
 
     this.position = new THREE.Vector3();
     this.start = new THREE.Vector3();
@@ -241,6 +226,8 @@ export class Bobber {
     }
 
     if (f.state !== FISHING_STATE.WAITING) this.mesh.rotation.set(0, 0, 0);
+    // 釣起時線的末端掛的是魚，浮標先收起來
+    this.mesh.visible = f.state !== FISHING_STATE.CAUGHT;
     this.mesh.position.copy(p);
     this.sag += (sag - this.sag) * Math.min(1, dt * 8);
     this.updateLine(_tip, p, showLine);
@@ -270,17 +257,30 @@ export class Bobber {
     } else if (state === FISHING_STATE.CAUGHT) {
       this.splash(this.position, 0.75, 14);
       this.fishStart = this.position.clone();
-      this.fishMaterial.color.set(f.currentFish.colorHex);
-      this.fishAccent.color.set(f.currentFish.accentColorHex || f.currentFish.colorHex);
-      const size = 0.4 + Math.min(0.6, Math.log10(1 + f.currentFish.weightKg * 4) * 0.33);
-      this.fishMesh.scale.setScalar(size);
-      this.fishMesh.visible = true;
-      this.fishTime = 0;
+      this.showCaughtFish(f.currentFish);
     } else if (state === FISHING_STATE.ESCAPED) {
       this.start.copy(this.position);
       if (this.prevState !== FISHING_STATE.CASTING) this.splash(this.position, 0.45, 6);
     }
-    if (state !== FISHING_STATE.CAUGHT) this.fishMesh.visible = false;
+    if (state !== FISHING_STATE.CAUGHT && this.fishMesh) this.fishMesh.visible = false;
+  }
+
+  showCaughtFish(fish) {
+    if (this.fishMesh) this.fishMesh.visible = false;
+    let model = this.fishModels.get(fish.id);
+    if (!model) {
+      model = createFishModel(fish);
+      this.fishModels.set(fish.id, model);
+      this.group.add(model);
+    }
+    // 體長隨重量在該魚種的範圍內變化：同一種魚，釣到大的看起來就是比較大
+    const k = (fish.weightKg - fish.minWeight) / Math.max(0.001, fish.maxWeight - fish.minWeight);
+    // 拿在眼前看會顯得很大，所以比水中的實際體長略小
+    this.fishLength = model.userData.length * 0.75 * (0.85 + 0.4 * k);
+    model.scale.setScalar(this.fishLength);
+    model.visible = true;
+    this.fishMesh = model;
+    this.fishTime = 0;
   }
 
   updateLine(tip, bobber, show) {
@@ -334,15 +334,17 @@ export class Bobber {
 
   /** 釣起的魚躍出水面，飛到竿尖下方掛著 */
   updateCaughtFish(dt, tip) {
-    if (!this.fishMesh.visible) return;
+    if (!this.fishMesh || !this.fishMesh.visible) return;
     this.fishTime += dt;
     const k = Math.min(1, this.fishTime / 0.55);
     const e = 1 - (1 - k) * (1 - k);
-    _a.set(tip.x, tip.y - 0.3, tip.z);
+    // 頭掛在竿尖下方，魚越長垂得越低
+    _a.set(tip.x, tip.y - 0.1 - this.fishLength * 0.5, tip.z);
     this.fishMesh.position.lerpVectors(this.fishStart, _a, e);
     this.fishMesh.position.y += Math.sin(k * Math.PI) * 0.6;
     // 頭朝上掛著，並左右甩動
     this.fishMesh.rotation.set(0, this.fishTime * 2.2, Math.PI / 2 * e + Math.sin(this.fishTime * 16) * 0.22 * (1 - k * 0.6));
+    this.fishMesh.userData.tail.rotation.y = Math.sin(this.fishTime * 18) * 0.5;
   }
 }
 

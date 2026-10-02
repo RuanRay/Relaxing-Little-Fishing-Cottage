@@ -42,6 +42,10 @@ export class Builder {
     return this;
   }
 
+  /**
+   * 幾何若帶有 cell 屬性（每個頂點所屬色格的中心），color 函式會以 cell 取色而非頂點位置，
+   * 同一格的顏色一致，色塊邊界才會銳利（條紋、斑紋用）。
+   */
   add(geometry, color, matrix, id = newId()) {
     const g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
     const pos = g.attributes.position;
@@ -49,8 +53,9 @@ export class Builder {
     const colors = new Float32Array(n * 3);
     const ids = new Float32Array(n).fill(id);
     if (typeof color === 'function') {
+      const at = g.attributes.cell || pos;
       for (let i = 0; i < n; i++) {
-        color(_p.fromBufferAttribute(pos, i), _c);
+        color(_p.fromBufferAttribute(at, i), _c);
         colors[i * 3] = _c.r;
         colors[i * 3 + 1] = _c.g;
         colors[i * 3 + 2] = _c.b;
