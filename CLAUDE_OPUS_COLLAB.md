@@ -93,5 +93,12 @@
 
 * **[2026-10-02]**：
   * 建立專案資料夾與 Git 存放庫。
-  * 建立 [CLAUDE_OPUS_COLLAB.md](file:///C:/Users/Student/Desktop/AI_Vibe_Coding_MCU_1002_project/CLAUDE_OPUS_COLLAB.md) 協作指南。
-  * 待定：選定遊戲主題，建立 Vite + Three.js 基礎環境。
+  * 建立 [CLAUDE_OPUS_COLLAB.md](file:///C:/Users/Student/Desktop/AI_Vibe_Coding_MCU_1002_project/CLAUDE_OPUS_COLLAB.md) 協作指南與 [WEB3D_TECH_STACK.md](file:///C:/Users/Student/Desktop/AI_Vibe_Coding_MCU_1002_project/WEB3D_TECH_STACK.md)。
+  * **開立分支 `feature/fishing-system`**：已實作完整非 3D 依賴之底層遊戲核心模組：
+    * `src/game/fishData.js`：淺灘與深水 6 種魚種完整資料表、出現權重、難度與均勻隨機重量抽取。
+    * `src/game/fishingSystem.js`：完整 8 狀態釣魚狀態機（IDLE、CHARGING、CASTING、WAITING、BITING 0.8s 反應窗、REELING 張力小遊戲、CAUGHT、ESCAPED）。
+    * `src/game/collectionSystem.js`：圖鑑記憶體紀錄與解鎖進度計算。
+    * `src/ui/hud.js` & `src/ui/hud.css`：準心、蓄力條、咬鉤警示「！」、右側張力條與進度條、魚卡彈窗、Tab 圖鑑面板、Esc 暫停。
+    * `test_fishing.html`：免 3D 前提之獨立互動測試台，即開即玩即驗證。
+    * 規格文件已封存至 `docs/FISHING_GAME_SPEC.md`。
+  * **下一步整合（等待 Opus 5.5 3D 完成）**：將 3D 場景點擊拋竿射線與浮標落點判定串接至 `FishingSystem.handlePointerUp({ zone, isLand })`，並將 HUD 疊加在 3D Canvas 上。
