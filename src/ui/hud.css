@@ -1,0 +1,497 @@
+/* =========================================================
+   日式海島第一人稱釣魚遊戲 - HUD 與 UI 樣式表
+   風格：日式清新微縮、圓角、奶油白底、深綠描邊、海洋藍與珊瑚橙
+   ========================================================= */
+
+:root {
+  --cream-white: #FFF9ED;
+  --cream-dark: #F4EAD4;
+  --dark-green: #1B4332;
+  --deep-forest: #081C15;
+  --ocean-blue: #2A9D8F;
+  --coral-orange: #E76F51;
+  --warm-gold: #F4A261;
+  --danger-red: #E63946;
+  --text-dark: #264653;
+  --border-thick: 3px solid var(--dark-green);
+  --border-radius-sm: 8px;
+  --border-radius-md: 16px;
+  --border-radius-lg: 24px;
+  --shadow-cartoon: 0 6px 0 rgba(27, 67, 50, 0.25);
+  --shadow-float: 0 10px 25px rgba(27, 67, 50, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+#hud-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: 'PingFang TC', 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-dark);
+  z-index: 100;
+  overflow: hidden;
+}
+
+/* 讓互動視窗可接收點擊 */
+.interactive {
+  pointer-events: auto;
+}
+
+/* --- 1. 準心 (Crosshair) --- */
+#crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border: 2.5px solid var(--cream-white);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--dark-green), 0 2px 4px rgba(0,0,0,0.3);
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+#crosshair.hidden {
+  opacity: 0;
+}
+
+/* --- 2. 蓄力條 (Charge Bar) --- */
+#charge-container {
+  position: absolute;
+  top: calc(50% + 28px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 16px;
+  background: var(--cream-white);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-cartoon);
+  overflow: hidden;
+  display: none;
+}
+
+#charge-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--ocean-blue), var(--coral-orange));
+  border-radius: 12px;
+  transition: width 0.05s linear;
+}
+
+/* --- 3. 咬鉤警示 (Bite Alert) --- */
+#bite-alert {
+  position: absolute;
+  top: calc(50% - 65px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.6);
+  background: var(--coral-orange);
+  color: #fff;
+  border: var(--border-thick);
+  border-radius: var(--border-radius-lg);
+  padding: 6px 18px;
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: 0 6px 0 var(--dark-green), 0 10px 20px rgba(231, 111, 81, 0.4);
+  opacity: 0;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease;
+  letter-spacing: 2px;
+}
+
+#bite-alert.active {
+  opacity: 1;
+  transform: translateX(-50%) scale(1.1);
+  animation: bitePulse 0.4s infinite alternate ease-in-out;
+}
+
+@keyframes bitePulse {
+  from { transform: translateX(-50%) scale(1.0); }
+  to { transform: translateX(-50%) scale(1.25); }
+}
+
+/* --- 4. 張力條與進度條 (Tension & Reeling HUD) --- */
+#reeling-hud {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 18px;
+  background: rgba(255, 249, 237, 0.95);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-lg);
+  padding: 20px 18px;
+  box-shadow: var(--shadow-float), var(--shadow-cartoon);
+  backdrop-filter: blur(8px);
+  display: none;
+}
+
+.meter-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.meter-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--dark-green);
+  text-transform: uppercase;
+}
+
+/* 張力軌道 */
+.tension-track {
+  position: relative;
+  width: 28px;
+  height: 220px;
+  background: var(--cream-dark);
+  border: 2.5px solid var(--dark-green);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* 安全區塊 */
+#safe-zone {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: rgba(42, 157, 143, 0.45);
+  border-top: 2px dashed var(--ocean-blue);
+  border-bottom: 2px dashed var(--ocean-blue);
+  box-sizing: border-box;
+}
+
+/* 當前張力游標指示 */
+#tension-indicator {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  height: 12px;
+  background: var(--coral-orange);
+  border: 2px solid var(--dark-green);
+  border-radius: 6px;
+  transform: translateY(50%);
+  transition: bottom 0.05s ease-out;
+  box-shadow: 0 0 6px rgba(231, 111, 81, 0.6);
+}
+
+#tension-indicator.safe {
+  background: var(--ocean-blue);
+  box-shadow: 0 0 8px rgba(42, 157, 143, 0.8);
+}
+
+/* 捕獲進度條軌道 */
+.progress-track {
+  position: relative;
+  width: 18px;
+  height: 220px;
+  background: var(--cream-dark);
+  border: 2.5px solid var(--dark-green);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+#catch-progress-fill {
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(180deg, #A7C957, var(--ocean-blue));
+  transition: height 0.05s ease;
+}
+
+.reeling-tip {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dark-green);
+  text-align: center;
+}
+
+/* --- 5. 結果提示字 (Toast) --- */
+#toast-message {
+  position: absolute;
+  top: calc(50% + 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cream-white);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-md);
+  padding: 8px 24px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dark-green);
+  box-shadow: var(--shadow-cartoon);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+#toast-message.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* --- 6. 釣獲魚卡 (Fish Card) --- */
+#fish-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  background: var(--cream-white);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-lg);
+  padding: 28px 36px;
+  box-shadow: var(--shadow-float), 0 10px 0 var(--dark-green);
+  width: 320px;
+  text-align: center;
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+  display: none;
+}
+
+#fish-card.show {
+  display: block;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.fish-card-header {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ocean-blue);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.fish-visual {
+  margin: 18px auto;
+  width: 140px;
+  height: 90px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fish-avatar-shape {
+  width: 80px;
+  height: 48px;
+  border-radius: 50% 50% 40% 40%;
+  border: 3px solid var(--dark-green);
+  position: relative;
+  box-shadow: 0 4px 0 rgba(27,67,50,0.15);
+}
+
+.fish-avatar-shape::after {
+  content: '';
+  position: absolute;
+  right: -16px;
+  top: 10px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-left: 18px solid var(--dark-green);
+}
+
+.fish-card-name {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--dark-green);
+  margin-top: 6px;
+}
+
+.fish-card-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--ocean-blue);
+  margin-top: 6px;
+}
+
+.fish-card-badge.rarity-普通 { background: var(--ocean-blue); }
+.fish-card-badge.rarity-稀有 { background: var(--coral-orange); }
+.fish-card-badge.rarity-傳說 { background: linear-gradient(135deg, #E76F51, #F4A261); }
+
+.fish-card-meta {
+  margin-top: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.fish-card-hint {
+  margin-top: 18px;
+  font-size: 12px;
+  color: #889296;
+}
+
+/* --- 7. 圖鑑彈窗 (Collection Modal - Tab Key) --- */
+#collection-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 28, 21, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#collection-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.collection-dialog {
+  background: var(--cream-white);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-lg);
+  padding: 30px;
+  width: 660px;
+  max-width: 90vw;
+  box-shadow: 0 16px 0 var(--dark-green), var(--shadow-float);
+}
+
+.collection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px dashed var(--dark-green);
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.collection-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--dark-green);
+}
+
+.collection-stats {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--coral-orange);
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.collection-card {
+  background: #FFFDF7;
+  border: 2px solid var(--dark-green);
+  border-radius: var(--border-radius-md);
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 4px 0 rgba(27, 67, 50, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.collection-card.locked {
+  background: #EAE6DB;
+  opacity: 0.65;
+}
+
+.collection-card-icon {
+  width: 50px;
+  height: 30px;
+  margin: 6px auto;
+  border-radius: 50% 50% 40% 40%;
+  border: 2px solid var(--dark-green);
+  position: relative;
+}
+
+.collection-card-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--dark-green);
+  margin-top: 4px;
+}
+
+.collection-card-info {
+  font-size: 11px;
+  color: #6c757d;
+  margin-top: 4px;
+}
+
+.collection-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dark-green);
+}
+
+/* --- 8. 開場與暫停畫面 --- */
+#start-screen {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cream-white);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-lg);
+  padding: 16px 36px;
+  text-align: center;
+  box-shadow: 0 8px 0 var(--dark-green), var(--shadow-float);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s ease;
+}
+
+#start-screen:hover {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.start-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--dark-green);
+}
+
+.start-sub {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--coral-orange);
+  margin-top: 4px;
+}
+
+#pause-screen {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 28, 21, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#pause-screen.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pause-box {
+  background: var(--cream-white);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-lg);
+  padding: 30px 50px;
+  text-align: center;
+  box-shadow: 0 10px 0 var(--dark-green);
+}

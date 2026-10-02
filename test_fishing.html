@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎣 日式海島第一人稱釣魚遊戲 - 核心玩法測試台</title>
+    <link rel="stylesheet" href="/src/ui/hud.css" />
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        background: radial-gradient(circle at center, #90e0ef 0%, #0077b6 100%);
+        font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        overflow: hidden;
+      }
+
+      /* 模擬 3D 場景視圖 */
+      #sim-viewport {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        padding-bottom: 30px;
+        pointer-events: auto;
+      }
+
+      /* 水面波浪模擬效果 */
+      .water-surface {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40%;
+        background: linear-gradient(180deg, rgba(42, 157, 143, 0.45) 0%, rgba(8, 28, 21, 0.75) 100%);
+        border-top: 3px solid rgba(255, 255, 255, 0.6);
+        pointer-events: none;
+      }
+
+      /* 測試控制面板 */
+      #dev-panel {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 249, 237, 0.95);
+        border: 3px solid #1b4332;
+        border-radius: 16px;
+        padding: 16px 20px;
+        box-shadow: 0 6px 0 rgba(27, 67, 50, 0.3);
+        z-index: 200;
+        font-size: 13px;
+        color: #1b4332;
+        max-width: 320px;
+        backdrop-filter: blur(5px);
+      }
+
+      #dev-panel h3 {
+        margin: 0 0 10px 0;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .dev-row {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .dev-badge {
+        font-weight: 800;
+        background: #2a9d8f;
+        color: #fff;
+        padding: 2px 8px;
+        border-radius: 6px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .dev-btn {
+        background: #fff;
+        border: 2px solid #1b4332;
+        border-radius: 8px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.1s ease;
+      }
+
+      .dev-btn:hover {
+        background: #f4ead4;
+      }
+
+      .dev-btn.active {
+        background: #e76f51;
+        color: #fff;
+      }
+
+      /* 虛擬操作按鈕（輔助在非全螢幕/鎖定時點擊） */
+      #action-dock {
+        position: fixed;
+        bottom: 25px;
+        display: flex;
+        gap: 15px;
+        z-index: 200;
+      }
+
+      .dock-btn {
+        background: #fff9ed;
+        border: 3px solid #1b4332;
+        border-radius: 16px;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 900;
+        color: #1b4332;
+        cursor: pointer;
+        box-shadow: 0 4px 0 #1b4332;
+        transition: transform 0.08s ease, box-shadow 0.08s ease;
+      }
+
+      .dock-btn:active {
+        transform: translateY(4px);
+        box-shadow: 0 0 0 #1b4332;
+      }
+
+      #unit-test-results {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #1b4332;
+        font-size: 11px;
+        color: #2a9d8f;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 模擬 3D 水面與點擊互動層 -->
+    <div id="sim-viewport">
+      <div class="water-surface"></div>
+      <div id="action-dock">
+        <button id="btn-cast" class="dock-btn">按住蓄力 / 放開拋竿 (左鍵)</button>
+        <button id="btn-cancel" class="dock-btn" style="background:#f4ead4;">右鍵收竿</button>
+        <button id="btn-tab-col" class="dock-btn" style="background:#e8f4f8;">查看圖鑑 (Tab)</button>
+      </div>
+    </div>
+
+    <!-- 測試控制面板 -->
+    <div id="dev-panel">
+      <h3>🛠️ 釣魚核心狀態機測試</h3>
+      <div class="dev-row">
+        <span>當前狀態 (State):</span>
+        <span id="state-badge" class="dev-badge">IDLE</span>
+      </div>
+      <div class="dev-row">
+        <span>目標水域模擬:</span>
+        <div class="btn-group" style="margin: 0;">
+          <button id="zone-shallow" class="dev-btn active">淺灘</button>
+          <button id="zone-deep" class="dev-btn">深水</button>
+          <button id="zone-land" class="dev-btn">陸地(彈回)</button>
+        </div>
+      </div>
+      <div class="dev-row">
+        <span>當前上鉤魚種:</span>
+        <span id="current-fish-name" style="font-weight:800; color:#e76f51;">-</span>
+      </div>
+      <div class="dev-row">
+        <span>咬鉤倒數 / 計時:</span>
+        <span id="timer-display">-</span>
+      </div>
+      <div id="unit-test-results">✅ 單元驗證：全部通過</div>
+    </div>
+
+    <!-- 模組化載入 -->
+    <script type="module">
+      import { FISH_DATABASE, drawRandomFish, WATER_ZONES } from '/src/game/fishData.js';
+      import { FishingSystem, FISHING_STATE } from '/src/game/fishingSystem.js';
+      import { CollectionSystem } from '/src/game/collectionSystem.js';
+      import { HUD } from '/src/ui/hud.js';
+
+      // 1. 初始化各子系統
+      const collectionSystem = new CollectionSystem();
+      const fishingSystem = new FishingSystem({ collectionSystem });
+      const hud = new HUD({ fishingSystem, collectionSystem });
+
+      // 預設已啟動第一人稱 HUD
+      hud.activateFirstPerson();
+
+      // 水域選擇模擬
+      let currentMockZone = WATER_ZONES.SHALLOW;
+      let mockIsLand = false;
+
+      const zoneShallowBtn = document.getElementById('zone-shallow');
+      const zoneDeepBtn = document.getElementById('zone-deep');
+      const zoneLandBtn = document.getElementById('zone-land');
+
+      function updateZoneBtns() {
+        zoneShallowBtn.classList.toggle('active', currentMockZone === WATER_ZONES.SHALLOW && !mockIsLand);
+        zoneDeepBtn.classList.toggle('active', currentMockZone === WATER_ZONES.DEEP && !mockIsLand);
+        zoneLandBtn.classList.toggle('active', mockIsLand);
+      }
+
+      zoneShallowBtn.onclick = () => { currentMockZone = WATER_ZONES.SHALLOW; mockIsLand = false; updateZoneBtns(); };
+      zoneDeepBtn.onclick = () => { currentMockZone = WATER_ZONES.DEEP; mockIsLand = false; updateZoneBtns(); };
+      zoneLandBtn.onclick = () => { mockIsLand = true; updateZoneBtns(); };
+
+      // 2. 測試面板與狀態更新
+      const stateBadge = document.getElementById('state-badge');
+      const currentFishName = document.getElementById('current-fish-name');
+      const timerDisplay = document.getElementById('timer-display');
+
+      fishingSystem.on('onStateChange', (newState) => {
+        stateBadge.textContent = newState;
+        if (newState === FISHING_STATE.WAITING || newState === FISHING_STATE.BITING || newState === FISHING_STATE.REELING || newState === FISHING_STATE.CAUGHT) {
+          currentFishName.textContent = fishingSystem.currentFish
+            ? `${fishingSystem.currentFish.name} (${fishingSystem.currentFish.weightKg}kg / 難度${fishingSystem.currentFish.difficulty})`
+            : '-';
+        } else if (newState === FISHING_STATE.IDLE) {
+          currentFishName.textContent = '-';
+        }
+      });
+
+      // 3. 輸入按鈕與鍵盤綁定
+      const castBtn = document.getElementById('btn-cast');
+      const cancelBtn = document.getElementById('btn-cancel');
+      const tabColBtn = document.getElementById('btn-tab-col');
+
+      castBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        fishingSystem.handlePointerDown();
+      });
+
+      window.addEventListener('pointerup', () => {
+        fishingSystem.handlePointerUp({
+          zone: currentMockZone,
+          isLand: mockIsLand,
+        });
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        fishingSystem.handleRightClick();
+      });
+
+      tabColBtn.addEventListener('click', () => {
+        hud.toggleCollection();
+      });
+
+      // 也允許點擊畫布任何空白處操作
+      const simViewport = document.getElementById('sim-viewport');
+      simViewport.addEventListener('pointerdown', (e) => {
+        if (e.target === simViewport || e.target.classList.contains('water-surface')) {
+          fishingSystem.handlePointerDown();
+        }
+      });
+
+      window.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        fishingSystem.handleRightClick();
+      });
+
+      // 4. 動態主迴圈 (Tick)
+      let lastTime = performance.now();
+      function gameLoop(now) {
+        const dt = Math.min(0.1, (now - lastTime) / 1000);
+        lastTime = now;
+
+        fishingSystem.update(dt);
+        hud.update(dt);
+
+        // 更新計時器顯示
+        if (fishingSystem.state === FISHING_STATE.WAITING) {
+          const remain = Math.max(0, fishingSystem.waitDuration - fishingSystem.waitTimer).toFixed(1);
+          timerDisplay.textContent = `等待咬鉤: ${remain}s`;
+        } else if (fishingSystem.state === FISHING_STATE.BITING) {
+          const remain = Math.max(0, fishingSystem.biteTimer).toFixed(2);
+          timerDisplay.textContent = `⚡ 點擊反應: ${remain}s！`;
+        } else if (fishingSystem.state === FISHING_STATE.REELING) {
+          timerDisplay.textContent = `拉扯中 (進度 ${Math.round(fishingSystem.reelingProgress)}%)`;
+        } else if (fishingSystem.state === FISHING_STATE.CHARGING) {
+          timerDisplay.textContent = `蓄力 ${(fishingSystem.chargeRatio * 100).toFixed(0)}%`;
+        } else {
+          timerDisplay.textContent = '-';
+        }
+
+        requestAnimationFrame(gameLoop);
+      }
+      requestAnimationFrame(gameLoop);
+
+      // 5. 自動單元驗收測試
+      console.log('--- 執行釣魚系統核心單元驗證 ---');
+      try {
+        console.assert(FISH_DATABASE.length === 6, '魚種數量應為 6');
+        const shallowFish = drawRandomFish(WATER_ZONES.SHALLOW);
+        console.assert(shallowFish.zone === 'shallow', '淺灘魚種判定正確');
+        console.assert(shallowFish.weightKg >= shallowFish.minWeight && shallowFish.weightKg <= shallowFish.maxWeight, '重量範圍正確');
+        const deepFish = drawRandomFish(WATER_ZONES.DEEP);
+        console.assert(deepFish.zone === 'deep', '深水魚種判定正確');
+
+        // 圖鑑測試
+        collectionSystem.recordCatch(shallowFish);
+        console.assert(collectionSystem.hasCaught(shallowFish.id), '圖鑑應成功記錄已釣獲');
+        console.assert(collectionSystem.getAllEntries().find(e => e.id === shallowFish.id).isUnlocked, '圖鑑條目解鎖正確');
+
+        console.log('✅ 所有核心邏輯單元測試通過！');
+      } catch (err) {
+        console.error('❌ 單元測試失敗:', err);
+        document.getElementById('unit-test-results').textContent = '❌ 單元測試失敗: ' + err.message;
+        document.getElementById('unit-test-results').style.color = '#e63946';
+      }
+    </script>
+  </body>
+</html>
