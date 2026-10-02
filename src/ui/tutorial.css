@@ -1,0 +1,199 @@
+/* =========================================================
+   新手教學卡片：畫面上方置中，延續 HUD 的奶油白底、深綠描邊
+   （色彩變數定義於 hud.css）
+   ========================================================= */
+
+#tutorial-card {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  width: min(440px, calc(100vw - 32px));
+  transform: translateX(-50%) translateY(-16px);
+  background: rgba(255, 249, 237, 0.96);
+  border: var(--border-thick);
+  border-radius: var(--border-radius-lg);
+  padding: 12px 18px 14px;
+  box-shadow: var(--shadow-cartoon), var(--shadow-float);
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.2s ease;
+}
+
+#tutorial-card.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#tutorial-card.bump {
+  animation: tutorialBump 0.4s ease;
+}
+
+@keyframes tutorialBump {
+  0% { transform: translateX(-50%) translateY(0) scale(1); }
+  40% { transform: translateX(-50%) translateY(0) scale(1.04); }
+  100% { transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+.tutorial-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tutorial-chip {
+  background: var(--dark-green);
+  color: var(--cream-white);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+/* 進度圓點 */
+.tutorial-dots {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+
+.tutorial-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--dark-green);
+  background: transparent;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.tutorial-dots i.past { background: var(--ocean-blue); }
+.tutorial-dots i.current {
+  background: var(--coral-orange);
+  transform: scale(1.25);
+}
+
+.tutorial-skip {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7a8a86;
+  white-space: nowrap;
+}
+
+.tutorial-title {
+  display: flex;
+  align-items: center;
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--dark-green);
+}
+
+/* 完成打勾：平常收起，完成時彈出 */
+.tutorial-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ocean-blue);
+  color: #fff;
+  font-size: 15px;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease;
+}
+
+#tutorial-card.complete,
+#tutorial-card.done {
+  border-color: var(--ocean-blue);
+}
+
+#tutorial-card.complete .tutorial-check,
+#tutorial-card.done .tutorial-check {
+  width: 24px;
+  margin-right: 8px;
+  opacity: 1;
+}
+
+#tutorial-card.complete .tutorial-body {
+  opacity: 0.45;
+}
+
+.tutorial-body {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.75;
+  color: var(--text-dark);
+  transition: opacity 0.2s ease;
+}
+
+.tutorial-body b {
+  color: var(--coral-orange);
+}
+
+.tutorial-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #7a8a86;
+}
+
+/* 按鍵樣式 */
+#tutorial-card kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 0 7px;
+  margin: 0 2px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+  color: var(--dark-green);
+  background: #fff;
+  border: 2px solid var(--dark-green);
+  border-radius: 7px;
+  box-shadow: 0 2px 0 var(--dark-green);
+  vertical-align: 1px;
+}
+
+.tutorial-skip kbd {
+  box-shadow: 0 1px 0 var(--dark-green) !important;
+  border-width: 1.5px !important;
+}
+
+/* 提醒：魚跑了、拋到陸地等 */
+.tutorial-note {
+  display: none;
+  margin-top: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--coral-orange);
+  border-radius: 10px;
+}
+
+.tutorial-note.show {
+  display: block;
+}
+
+/* 暫停畫面上的「重看新手教學」 */
+#tutorial-replay {
+  display: block;
+  margin: 12px auto 0;
+  background: transparent;
+  color: var(--dark-green);
+  border: 2px solid var(--dark-green);
+  padding: 6px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+#tutorial-replay:hover {
+  background: var(--cream-dark);
+}

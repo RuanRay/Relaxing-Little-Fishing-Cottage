@@ -1,6 +1,7 @@
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { dockToWorld } from '../world/dock.js';
 import { HUD } from '../ui/hud.js';
+import { Tutorial } from '../ui/tutorial.js';
 import { FishingSystem, FISHING_STATE } from './fishingSystem.js';
 import { CollectionSystem } from './collectionSystem.js';
 import { CameraDirector, CAMERA_MODE } from './cameraDirector.js';
@@ -44,6 +45,14 @@ export class Game {
     this.look.minPolarAngle = 0.3;
     this.look.maxPolarAngle = Math.PI - 0.25;
 
+    this.tutorial = new Tutorial({
+      fishing: this.fishing,
+      hud: this.hud,
+      camera,
+      player: this.player,
+      onStepComplete: () => this.audio.ui(880),
+    });
+
     this.debug = new URLSearchParams(window.location.search).has('debug');
 
     this.bindInput(renderer.domElement.ownerDocument);
@@ -69,7 +78,7 @@ export class Game {
       this.look.enabled = true;
       // 過場期間若滑鼠鎖定失敗，就停在暫停畫面等玩家再點一次
       if (!this.look.isLocked) this.pause();
-      hud.showHint('WASD 移動 · Shift 加速 · 按住左鍵蓄力拋竿 · 右鍵收回 · Tab 圖鑑 · Esc 暫停', 9);
+      this.tutorial.start();
     };
 
     this.look.addEventListener('lock', () => {
@@ -108,7 +117,9 @@ export class Game {
     });
     doc.addEventListener('contextmenu', (e) => e.preventDefault());
     doc.addEventListener('keydown', (e) => {
-      if (this.mode === CAMERA_MODE.FIRST_PERSON && this.player.setKey(e.code, true)) e.preventDefault();
+      if (this.mode !== CAMERA_MODE.FIRST_PERSON) return;
+      if (this.player.setKey(e.code, true)) e.preventDefault();
+      else if (e.code === 'KeyQ' && this.playing) this.tutorial.skip();
     });
     doc.addEventListener('keyup', (e) => this.player.setKey(e.code, false));
     window.addEventListener('blur', () => this.player.releaseKeys());
@@ -182,6 +193,7 @@ export class Game {
       }
       this.rod.update(step, active ? this.player.speed : 0);
       this.bobber.update(step, time);
+      this.tutorial.update(dt, active);
 
       if (fishing.state === FISHING_STATE.CHARGING && this.bobber.lastAim) {
         const aim = this.bobber.lastAim;
